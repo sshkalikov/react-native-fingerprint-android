@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.support.v4.hardware.fingerprint.FingerprintManagerCompat;
 import android.support.v4.os.CancellationSignal;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -26,6 +27,8 @@ public class FingerprintModule extends ReactContextBaseJavaModule {
     final int FINGERPRINT_ACQUIRED_AUTH_FAILED = 999;
 
     final int FINGERPRINT_ERROR_CANCELED = 5;
+
+    private static final String TAG = "RNFingerprintModule";
 
     public FingerprintModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -113,12 +116,12 @@ public class FingerprintModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void cancelAuthentication(Promise promise) {
         try {
-            if(!isCancelled) {
+            if (!isCancelled) {
                 cancellationSignal.cancel();
                 isCancelled = true;
             }
             promise.resolve(null);
-        } catch(Exception e) {
+        } catch (Exception e) {
             promise.reject(e);
         }
     }
@@ -140,11 +143,12 @@ public class FingerprintModule extends ReactContextBaseJavaModule {
         @Override
         public void onAuthenticationError(int errorCode, CharSequence errString) {
             super.onAuthenticationError(errorCode, errString);
-            if(errorCode == FINGERPRINT_ERROR_CANCELED) {
+            if (errorCode == FINGERPRINT_ERROR_CANCELED) {
                 isCancelled = true;
             }
-            if(promise == null) {
-                throw new AssertionError("Tried to reject the auth promise, but it was already resolved / rejected. This shouldn't happen.");
+            if (promise == null) {
+                Log.e(TAG, "Tried to reject the auth promise, but it was already resolved / rejected. This shouldn't happen.");
+                return;
             }
             promise.reject(Integer.toString(errorCode), errString.toString());
             promise = null;
@@ -165,8 +169,9 @@ public class FingerprintModule extends ReactContextBaseJavaModule {
         @Override
         public void onAuthenticationSucceeded(FingerprintManagerCompat.AuthenticationResult result) {
             super.onAuthenticationSucceeded(result);
-            if(promise == null) {
-                throw new AssertionError("Tried to resolve the auth promise, but it was already resolved / rejected. This shouldn't happen.");
+            if (promise == null) {
+                Log.e(TAG, "Tried to resolve the auth promise, but it was already resolved / rejected. This shouldn't happen.");
+                return;
             }
             promise.resolve(null);
             promise = null;
